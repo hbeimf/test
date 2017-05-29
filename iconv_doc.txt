@@ -1,0 +1,61 @@
+
+rebar.config
+{port_envs, [{"darwin|openbsd", "LDFLAGS", "$LDFLAGS -liconv"},
+             {"openbsd", "CFLAGS", "$CFLAGS -I/usr/local/include"},
+             {"openbsd", "LDFLAGS", "$LDFLAGS -L/usr/local/lib"}]}.
+
+ERROR: $CC c_src/iconv_erl.o $LDFLAGS $DRV_LDFLAGS -o priv/iconv_drv.so
+
+
+========================================================================
+
+rebar port_env
+
+
+http://cryolite.iteye.com/blog/1159448
+
+gcc -std=c99 -fPIC -shared -o gdal_nifs.so gdal_nifs.c -I$ERL_HOME/usr/include -lgdal
+
+
+
+{port_specs, [{"priv/xxxx.so", ["c_src/*.c"}]}.
+{port_env, [
+    {"CFLAGS", "$CFLAGS -std=c99"},
+    {"LDFLAGS", "$LDFLAGS -lgdal"}
+    ]}.
+
+
+{port_specs, [{"priv/iconv_drv.so", ["c_src/*.c"}]}.
+{port_envs, [
+    %{"CFLAGS", "$CFLAGS -std=c99"},
+    %{"LDFLAGS", "$LDFLAGS -liconv"}
+    {_, "CFLAGS", "$CFLAGS -I/usr/local/include"},
+    {_, "LDFLAGS", "$LDFLAGS -L/usr/local/lib -liconv"}
+
+    ]}.
+
+
+/usr/local/erlang/lib/erlang/usr/include
+
+
+gcc -std=c99 -fPIC -shared -o iconv_drv.so iconv_erl.c -I$ERL_HOME/usr/include -liconv
+
+
+$ERL_HOME=/usr/local/erlang/lib/erlang
+gcc -std=c99 -fPIC -shared -o iconv_drv.so iconv_erl.c -I$ERL_HOME/usr/include -liconv
+
+************ it works
+gcc -std=c99 -fPIC -shared -o iconv_drv.so iconv_erl.c -I/usr/local/erlang/lib/erlang/usr/include -liconv
+
+****
+{erl_opts, [debug_info]}.
+{deps, []}.
+
+{pre_hooks, [
+        {compile, "make -C go_src --no-print-directory"},
+        {compile, "mv go_src/gonode priv/xgn.node"}
+    ]
+}.
+
+
+

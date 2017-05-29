@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>ECharts</title>
+</head>
+
+<body>
+    <!--Step:1 Prepare a dom for ECharts which (must) has size (width & hight)-->
+    <!--Step:1 为ECharts准备一个具备大小（宽高）的Dom-->
+    <div id="main" style="height:600px;"></div>
+    <!-- <div id="mainMap" style="height:500px;border:1px solid #ccc;padding:10px;"></div> -->
+    
+    <!--Step:2 Import echarts.js-->
+    <!--Step:2 引入echarts.js-->
+    <script src="/public/echarts-2.2.7/doc/example/www/js/echarts.js"></script>
+    
+    <script type="text/javascript">
+    // Step:3 conifg ECharts's path, link to echarts.js from current page.
+    // Step:3 为模块加载器配置echarts的路径，从当前页面链接到echarts.js，定义所需图表路径
+    require.config({
+        paths: {
+            echarts: '/public/echarts-2.2.7/doc/example/www/js'
+        }
+    });
+    
+    // Step:4 require echarts and use it in the callback.
+    // Step:4 动态加载echarts然后在回调函数中开始使用，注意保持按需加载结构定义图表路径
+    require(
+        [
+            'echarts',
+            'echarts/chart/bar',
+            'echarts/chart/line',
+            'echarts/chart/map'
+        ],
+        function (ec) {
+            //--- 折柱 ---
+            var myChart = ec.init(document.getElementById('main'));
+            myChart.setOption({
+	             tooltip : {
+			        trigger: 'axis'
+			    },
+			    toolbox: {
+			        show : true,
+			        feature : {
+			            mark : {show: true},
+			            dataZoom : {show: true},
+			            dataView : {show: true},
+			            magicType : {show: true, type: ['line', 'bar']},
+			            restore : {show: true},
+			            saveAsImage : {show: true}
+			        }
+			    },
+			    dataZoom : {
+			        show : true,
+			        realtime : true,
+			        //orient: 'vertical',   // 'horizontal'
+			        //x: 0,
+			        y: 36,
+			        //width: 400,
+			        height: 20,
+			        //backgroundColor: 'rgba(221,160,221,0.5)',
+			        //dataBackgroundColor: 'rgba(138,43,226,0.5)',
+			        //fillerColor: 'rgba(38,143,26,0.6)',
+			        //handleColor: 'rgba(128,43,16,0.8)',
+			        //xAxisIndex:[],
+			        //yAxisIndex:[],
+			        start : 40,
+			        end : 60
+			    },
+			    xAxis : [
+			        {
+			            type : 'category',
+			            boundaryGap : false,
+			            // data : function (){
+			            //     var list = [];
+			            //     var n = 0;
+			            //     while (n++ < 150) {
+			            //         list.push(n);
+			            //     }
+			            //     return list;
+			            // }()
+			            data : [{% for u in data %}'{{u.time}}',{% endfor %}]
+			        }
+			    ],
+			    yAxis : [
+			        {
+			            type : 'value'
+			        }
+			    ],
+			    series : [
+			        {
+			            name:'dz',
+			            type:'line',
+			            // data:function (){
+			            //     var list = [];
+			            //     for (var i = 1; i <= 150; i++) {
+			            //         list.push(Math.round(Math.random()* 30));
+			            //     }
+			            //     return list;
+			            // }()
+			            data : [{% for u in data %}{{u.price}},{% endfor %}]
+			        }
+			    ],
+			    calculable:false
+            });
+        }
+    );
+    </script>
+</body>
+</html>
