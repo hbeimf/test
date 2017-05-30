@@ -15,7 +15,7 @@
     terminate/2,
     code_change/3]).
 
--export([start_goroutine/0, info/0, stop_goroutine/1]).
+% -export([start_goroutine/0, info/0, stop_goroutine/1, send_cast/2]).
 
 %% includes
 % -include_lib("eunit/include/eunit.hrl").
@@ -39,21 +39,24 @@
 %     gen_server:call(?MODULE, {call, ServerName}).
 
 
-start_goroutine() ->
-    gen_server:call(?MODULE, start_goroutine).
+% start_goroutine() ->
+%     gen_server:call(?MODULE, start_goroutine).
 
 
-info() ->
-    gen_server:call(?MODULE, info).
+% info() ->
+%     gen_server:call(?MODULE, info).
 
 % info(ServerName) ->
 %     gen_server:call(?MODULE, {info, ServerName}).
 
 
-stop_goroutine(GoMBox) ->
-    gen_server:call(?MODULE, {stop_goroutine, GoMBox}).
+% stop_goroutine(GoMBox) ->
+%     gen_server:call(?MODULE, {stop_goroutine, GoMBox}).
 
 
+
+% send_cast(GoMBox, Msg) ->
+%     gen_server:cast(?MODULE, {send_cast, GoMBox, Msg}).
 
 
 
@@ -85,7 +88,7 @@ start_link() ->
 init(_Options) ->
     process_flag(trap_exit, true),
     PortRef = start_go_node(),
-    erlang:send_after(175, self(), {'$gen_cast', ping_pong_with_go}),
+    erlang:send_after(75, self(), {'$gen_cast', ping_pong_with_go}),
     {ok, #state{ port_ref = PortRef }}.
 
 %%--------------------------------------------------------------------
@@ -128,27 +131,27 @@ init(_Options) ->
 
 %     {reply, Reply, State};
 %% 启动一个新的　go 进程，　并返回　进程号 {Pid}　
-handle_call(start_goroutine, _From, State) ->
-    {ok, {GoSrv, Host} } = application:get_env(go, go_mailbox),
-    % {_, _, ReplyPid} = gen_server:call({GoSrv, Host}, {new, self()}),
-    {_, ServerName} = gen_server:call({GoSrv, Host}, start_goroutine),
-    % io:format("reply :~p !! ============== ~n~n", [ServerName]),
-    {reply, {ServerName, Host}, State};
-handle_call({stop_goroutine, GoMBox}, _From, State) ->
-    {ok, {GoSrv, _Host} } = application:get_env(go, go_mailbox),
-    {ServerName, _} = GoMBox,
-    case ServerName of
-        GoSrv ->
-            ok;
-        _ ->
-            gen_server:cast(GoMBox, stop)
-    end,
-    {reply, GoMBox, State};
-handle_call(info, _From, State) ->
-    {ok, GoMBox} = application:get_env(go, go_mailbox),
-    Reply = gen_server:call(GoMBox, info),
-    % io:format("reply :~p !! ============== ~n~n", [Reply]),
-    {reply, Reply, State};
+% handle_call(start_goroutine, _From, State) ->
+%     {ok, {GoSrv, Host} } = application:get_env(go, go_mailbox),
+%     % {_, _, ReplyPid} = gen_server:call({GoSrv, Host}, {new, self()}),
+%     {_, ServerName} = gen_server:call({GoSrv, Host}, start_goroutine),
+%     % io:format("reply :~p !! ============== ~n~n", [ServerName]),
+%     {reply, {ServerName, Host}, State};
+% handle_call({stop_goroutine, GoMBox}, _From, State) ->
+%     {ok, {GoSrv, _Host} } = application:get_env(go, go_mailbox),
+%     {ServerName, _} = GoMBox,
+%     case ServerName of
+%         GoSrv ->
+%             ok;
+%         _ ->
+%             gen_server:cast(GoMBox, stop)
+%     end,
+%     {reply, GoMBox, State};
+% handle_call(info, _From, State) ->
+%     {ok, GoMBox} = application:get_env(go, go_mailbox),
+%     Reply = gen_server:call(GoMBox, info),
+%     % io:format("reply :~p !! ============== ~n~n", [Reply]),
+%     {reply, Reply, State};
 % handle_call({info, ServerName}, _From, State) ->
 %     {ok, {_GoSrv, Host} } = application:get_env(go, go_mailbox),
 %     % {ok, GoMBox} = application:get_env(go, go_mailbox),
@@ -175,9 +178,20 @@ handle_cast(ping_pong_with_go, State) ->
 
     {ok, GoMBox} = application:get_env(go, go_mailbox),
     % io:format("message ~p!! ============== ~n~n", [GoMBox]),
+    % go_sup:start_name_server(),
 
     gen_server:cast(GoMBox, {ping, self()}),
     {noreply, State};
+
+
+% handle_cast({send_cast, GoMBox, Msg}, State) ->
+%     io:format("send cast !! ============== ~n~n"),
+%     % {ok, GoMBox} = application:get_env(go, go_mailbox),
+%     % io:format("message ~p!! ============== ~n~n", [GoMBox]),
+
+%     gen_server:cast(GoMBox, {Msg, self()}),
+%     {noreply, State};
+
 
 handle_cast(_Msg, State) ->
     % ?ERR("unhandled cast message: ~p", [Msg]),
@@ -195,11 +209,15 @@ handle_cast(_Msg, State) ->
 %%--------------------------------------------------------------------
 
 handle_info({pong, Pid}, #state{remote_pid = undefined} = State) ->
-    io:format("message pong!! ============== ~n~n"),
+    io:format("message pong!! XXXYYY============== ~n~n"),
 
     % ?LOG("connection to node established, pid ~p", [Pid]),
     % TODO: do it when goerlang will support
     %link(Pid),
+
+    %% 此处 gonode 己经启动，　然后再启动 go_name_server
+    go_sup:start_name_server(),
+
     {noreply, State#state{remote_pid = Pid}};
 
 handle_info({pong, _}, State) ->
@@ -214,6 +232,7 @@ handle_info({'EXIT', _Pid, Reason}, State) ->
     {stop, {error, {mbox_exit, Reason}}, State};
 
 handle_info(_Info, State) ->
+     % io:format("handle info BBB!!============== ~n~p~n~n", [Info]),
     {noreply, State}.
 
 %%--------------------------------------------------------------------
@@ -228,8 +247,9 @@ handle_info(_Info, State) ->
 %% @end
 %%--------------------------------------------------------------------
 terminate(_, #state{remote_pid = Pid}) when is_pid(Pid) ->
-    {ok, GoMBox} = application:get_env(go, go_mailbox),
-    gen_server:cast(GoMBox, stop),
+    % {ok, GoMBox} = application:get_env(go, go_mailbox),
+    % gen_server:cast(GoMBox, stop),
+    force_kill_process(),
     ok;
 terminate(_Reason, _State) ->
     ok.

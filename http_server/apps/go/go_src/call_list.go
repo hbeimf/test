@@ -7,8 +7,9 @@ import (
     "sort"
     "time"
     "strconv"
-    "fmt"
+    // "fmt"
 )
+
 
 // ================================================================
 type ListController struct  {
@@ -163,9 +164,9 @@ func num(start float64, end float64, list []float64) int {
     return i
 }
 
-// 精确到小数点后四位
-func format_float(num float64) float64 {
-    s := fmt.Sprintf("%.4f", num)
-    ss, _ := strconv.ParseFloat(s, 64)
-    return ss
-}
+// // 精确到小数点后四位
+// func format_float(num float64) float64 {
+//     s := fmt.Sprintf("%.4f", num)
+//     ss, _ := strconv.ParseFloat(s, 64)
+//     return ss
+// }

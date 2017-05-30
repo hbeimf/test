@@ -53,7 +53,7 @@ file_get_contents(Dir) ->
 	end.
 
 file_put_contents(Dir, Str) ->
-	file:write_file(Dir, list_to_binary(Str)).
+	file:write_file(Dir, to_binary(Str)).
 
 file_exists(Dir) ->
 	case filelib:is_dir(Dir) of

@@ -13,6 +13,8 @@
 %% Supervisor callbacks
 -export([init/1]).
 
+-export([start_name_server/0]).
+
 -define(SERVER, ?MODULE).
 
 %%====================================================================
@@ -21,6 +23,16 @@
 
 start_link() ->
     supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+
+
+
+start_name_server() ->
+    io:format("~n start name server ==================~n~n"),
+    GoNameServ = {go_name_server, {go_name_server, start_link, []},
+               permanent, 5000, worker, [go_name_server]},
+
+     supervisor:start_child(?SERVER, GoNameServ).
+
 
 %%====================================================================
 %% Supervisor callbacks
@@ -33,6 +45,9 @@ start_link() ->
 init([]) ->
     Go = {go_server, {go_server, start_link, []},
                permanent, 5000, worker, [go_server]},
+
+    % GoNameServ = {go_name_server, {go_name_server, start_link, []},
+    %            permanent, 5000, worker, [go_name_server]},
 
     Children = [Go],
 

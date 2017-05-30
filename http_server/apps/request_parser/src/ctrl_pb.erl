@@ -56,6 +56,19 @@ action(20001, _BinString, Status) ->
 
     {reply_binary, Status, ReplyBin};
 
+action(20002, _BinString, Status) ->
+    io:format("file: ~p =========== \nline:~p =========== ~n~n ~p ~n~n", [?FILE, ?LINE, "BinString"]),
+    Msg = protocol_pb:encode_msg(#'Msg'{msg="更新数据"}),
+    ReplyBin = protocol_pb:encode_msg(#'Base'{id=20000, data=Msg}),
+
+    io:format("file: ~p =========== \nline:~p =========== ~n~n ~p ~n~n", [?FILE, ?LINE, ReplyBin]),
+    % ReplyBin = protocol_pb:encode_msg(#'Base'{id=10001, data=BinString}),
+
+    Work = {init_data, self()},
+    workboy:start(Work),
+
+    {reply_binary, Status, ReplyBin};
+
 
 action(_PId, _BinString, Status) ->
     % Msg = protocol_pb:encode_msg(#'Msg'{msg="未定义的功能"}),

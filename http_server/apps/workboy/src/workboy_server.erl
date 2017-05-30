@@ -63,6 +63,34 @@ handle_call(_Request, _From, State) ->
     Reply = ok,
     {reply, Reply, State}.
 
+
+
+% delete_page() ->
+%     {Year, Jidu} = spider:today(),
+%     Key = lib_fun:to_str(Year) ++ ":" ++ lib_fun:to_str(Jidu),
+%     Sql = "delete from sina_web_page where info_key like '%"++ lib_fun:to_str(Key) ++"'",
+
+%     io:format("~p~n~n", [Sql]),
+%     mysql:query_sql(Sql).
+
+
+
+insert_page(InfoKey, Link) ->
+    Html = go:http_get(Link),
+    Html1 = go:iconv(Html, 'gb2312', 'utf-8'),
+
+    lib_fun:file_put_contents("/web/1.html", Html1),
+
+    Data = [
+        {<<"info_key">>, InfoKey},
+        {<<"url">>, Link},
+        {<<"html_page">>, Html1}
+    ],
+
+    mysql:insert("sina_web_page", Data),
+
+    io:format("~p~n", [Link]).
+
 % --------------------------------------------------------------------
 % Function: handle_cast/2
 % Description: Handling cast messages
@@ -70,6 +98,59 @@ handle_call(_Request, _From, State) ->
 %          {noreply, State, Timeout} |
 %          {stop, Reason, State}            (terminate/2 is called)
 % --------------------------------------------------------------------
+handle_cast({work, {init_data, From}}, State) ->
+    % delete_page(),
+    % io:format("delete done!!~n~n"),
+    Sql = "SELECT code,name FROM m_gp_list",
+    Rows = mysql:get_assoc(Sql),
+    Years = spider:years(),
+    {TheYear, TheJiDu} = spider:today(),
+
+    lists:foreach(fun(Row)-> 
+        % timer:sleep(10),
+        {_, Code} = lists:keyfind(<<"code">>, 1, Row),
+        {_, Name} = lists:keyfind(<<"name">>, 1, Row),
+        % io:format("")
+                    
+
+        lists:foreach(fun({Year, Jidu}) -> 
+            InfoKey = lib_fun:to_str(Name) ++ ":" ++ lib_fun:to_str(Code) ++ ":" ++ lib_fun:to_str(Year) ++ ":" ++ lib_fun:to_str(Jidu),
+
+            Link = "http://money.finance.sina.com.cn/corp/go.php/vMS_MarketHistory/stockid/"++lib_fun:to_str(Code)++".phtml?year="++lib_fun:to_str(Year)++"&jidu="++lib_fun:to_str(Jidu),
+        
+
+            SqlKey = "SELECT id from sina_web_page where info_key = '"++lib_fun:to_str(InfoKey)++"' limit 1",
+            % $row = $this->_mysql->get($sql);
+            Res = mysql:get_assoc(SqlKey),
+
+            case length(Res) =:= 0 of
+                true -> 
+                    % io:format("~p~n", [{Link, Res}]);
+                    insert_page(InfoKey, Link);
+                _ -> 
+                    case  Year =:= TheYear andalso Jidu =:= TheJiDu of
+                        true -> 
+                            io:format("link: ~p~n", [Link]);
+                            % insert_page(InfoKey, Link);
+                        _ -> 
+                            ok
+                    end
+            end
+
+
+            
+        end, Years)
+
+        % Link = "http://money.finance.sina.com.cn/corp/go.php/vMS_MarketHistory/stockid/"++lib_fun:to_str(Code)++".phtml?year={$year}&jidu={$jd}",
+
+        
+    end, Rows),
+    % Link = "http://money.finance.sina.com.cn/corp/go.php/vMS_MarketHistory/stockid/{$code1}.phtml?year={$year}&jidu={$jd}";
+
+
+
+    table_work:delete(init_data),
+    {stop, normal, State};
 handle_cast({work, {fetch_web, From}}, State) ->
     Url = "https://www.baidu.com/",
     % case httpc:request(Url) of

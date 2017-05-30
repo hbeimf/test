@@ -10,6 +10,7 @@ import (
     "os"
     "strconv"
     "runtime"
+    "strings"
 )
 
 type srv struct {
@@ -30,11 +31,6 @@ var PidFile string
 var enode *node.Node
 var serverId int
 
-type Controller interface {
-    Excute(message etf.Tuple) (*etf.Term)
-}
-
-var routers map[string]interface{}
 
 // 根据命令行解析参数
 func init() {
@@ -48,7 +44,8 @@ func init() {
 
     flag.IntVar(&serverId, "server_id", 10000, "新进程编号")
 
-    routers = make(map[string]interface{})
+    callRouters = make(map[string]interface{})
+    castRouters = make(map[string]interface{})
 }
 
 func main() {
@@ -58,32 +55,13 @@ func main() {
 
 func Start() {
     // 设置路由　
-    setRouter()
-    setDefaultRouter()
+    setCallRouter()
+    setCastRouter()
 
     startNode()
     startGenServer(SrvName)
 
 }
-
-
-
-func setDefaultRouter() {
-    var ctrl_default DefaultController
-    addRoute("default", &ctrl_default)
-}
-
-func addRoute(key string, controller Controller) {
-    routers[key] = controller
-}
-
-func getRouter(key string) (ctrl Controller) {
-    if _, ok := routers[key]; ok {
-        return routers[key].(Controller)
-    }
-    return routers["default"].(Controller)
-}
-
 
 func startNode() {
     // Parse CLI flags
@@ -150,7 +128,7 @@ func (gs *srv) Init(args ...interface{}) {
     // log.Printf("Init: %#v", args)
 
     // Store first argument as channel
-    gs.completeChan = args[0].(chan bool)
+    // gs.completeChan = args[0].(chan bool)
 }
 
 // HandleCast
@@ -158,27 +136,35 @@ func (gs *srv) Init(args ...interface{}) {
 func (gs *srv) HandleCast(message *etf.Term) {
     log.Printf("HandleCast: %#v", *message)
 
+    var self_pid etf.Pid = gs.Self
+
     // Check type of message
     switch req := (*message).(type) {
     case etf.Tuple:
+        from := req[1].(etf.Pid)
+
         if len(req) > 0 {
             switch act := req[0].(type) {
-            case etf.Atom:
-                if string(act) == "ping" {
-                    var self_pid etf.Pid = gs.Self
-                    gs.Node.Send(req[1].(etf.Pid), etf.Tuple{etf.Atom("pong"), etf.Pid(self_pid)})
-                }
+                case etf.Atom:
+                    if string(act) == "ping" {
+                        reply_msg := etf.Term(etf.Tuple{etf.Atom("pong"), etf.Pid(self_pid)})
+                        gs.Node.Send(from, reply_msg)
+                    }
+                case etf.Tuple:
+                    // 调用 Cast 控制器逻辑　
+                    cast := getCast(string(act[0].(etf.Atom)))
+                    cast.Excute(from, gs.Node, act)
             }
         }
+
     case etf.Atom:
         // If message is atom 'stop', we should say it to main process
         if string(req) == "stop" {
             if gs.serverName != SrvName {
                 // log.Printf("结束进程: %#v", gs.serverName)
                 log.Printf("结束进程, server name: %#v", gs.serverName)
-
                 gs.Node.Unregister(etf.Atom(gs.serverName))
-                gs.completeChan <- true
+                // gs.completeChan <- true
             }
         }
     }
@@ -191,42 +177,54 @@ func (gs *srv) HandleCall(message *etf.Term, from *etf.Tuple) (reply *etf.Term) 
     switch req := (*message).(type) {
     case etf.Tuple:
         if len(req) > 0 {
-            ctrl := getRouter(string(req[0].(etf.Atom)))
-            reply = ctrl.Excute(req)
-
-            // json := byteString(req[1].([]byte))
-            // reply = call(req[0].(int), json)
+            // 调用 Call 控制器逻辑
+            call := getCall(string(req[0].(etf.Atom)))
+            reply = call.Excute(req)
         }
     case etf.Atom:
         if string(req) == "start_goroutine" {
             // 启动一个新进程, 进程编号依次累加, 以gen_server,简称为前辍
             serverId += 1
             serverName := "gs_" + strconv.Itoa(serverId)
-
             log.Printf("new goroutine 创建新协程, server name: %#v", serverName)
 
-            go startGenServer(serverName)
-            // startGenServer(serverName)
+            eSrv := new(srv)
+            gs.Node.Spawn(eSrv)
+            eSrv.Node.Register(etf.Atom(serverName), eSrv.Self)
+            eSrv.serverName = serverName
 
             replyTerm := etf.Term(etf.Tuple{etf.Atom("ok"), etf.Atom(serverName)})
             reply = &replyTerm
+
         } else if string(req) == "info" {
             // 查看节点上启动了的进程信息
             registered := gs.Node.Registered()
-            // log.Printf("node status 注册的进程: %#v, 协程总数量: %#v", registered, runtime.NumGoroutine())
 
             // 协程总数量
             tupleNumGoroutine := etf.Tuple{etf.Atom("num_goroutine"), runtime.NumGoroutine()}
 
-            // 注册的进程的列表返回
+            // 由 erlang 注册的进程的列表, 进程数量
             var listRegisterdGoroutine etf.List
+            listRegisterdGoroutineCount := 0
+
+            // 包内部创建的协程列表，数量
+            var listRegisterdGoroutineSys etf.List
+            listRegisterdGoroutineSysCount := 0
+
             for i:=0; i<len(registered); i++{
-                listRegisterdGoroutine = append(listRegisterdGoroutine, registered[i])
+                if strings.Contains(string(registered[i]), "gs_") {
+                    listRegisterdGoroutine = append(listRegisterdGoroutine, registered[i])
+                    listRegisterdGoroutineCount += 1
+                } else {
+                    listRegisterdGoroutineSys = append(listRegisterdGoroutineSys, registered[i])
+                    listRegisterdGoroutineSysCount += 1
+                }
             }
-            tupleServerName := etf.Tuple{etf.Atom("registered_goroutine_name"), listRegisterdGoroutine}
+            tupleServerName := etf.Tuple{etf.Atom("registered_goroutine_name"), listRegisterdGoroutineCount, listRegisterdGoroutine}
+            tupleServerNameSys := etf.Tuple{etf.Atom("registered_goroutine_name_sys"), listRegisterdGoroutineSysCount, listRegisterdGoroutineSys}
 
             // 返回
-            replyTerm := etf.Term(etf.Tuple{etf.Atom("ok"), tupleNumGoroutine, tupleServerName})
+            replyTerm := etf.Term(etf.Tuple{etf.Atom("ok"), tupleNumGoroutine, tupleServerName, tupleServerNameSys})
             reply = &replyTerm
         }
     }
@@ -271,17 +269,4 @@ func write_pid() {
         log.Println("write pid in", PidFile)
     }
 }
-
-
-// private  funs
-// 将byte[] 转成string
-func byteString(p []byte) string {
-    for i := 0; i < len(p); i++ {
-        if p[i] == 0 {
-            return string(p[0:i])
-        }
-    }
-    return string(p)
-}
-
 
