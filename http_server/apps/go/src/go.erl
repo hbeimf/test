@@ -34,8 +34,9 @@ iconv(Str, From, To) ->
 str_replace() ->
     str_replace("hello world!!", "e", "XX").
 str_replace(StrRes, FindStr, ReplaceTo) ->
-    Call = {str, str_replace, StrRes, FindStr, ReplaceTo},
-    call(Call).
+    Call = {str, str_replace, lib_fun:to_str(StrRes), FindStr, ReplaceTo},
+    {ok, NewString} = call(Call),
+    NewString.
 
 % str(Str) ->
 %     Call = {str, Str},

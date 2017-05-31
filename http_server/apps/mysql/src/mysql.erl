@@ -95,17 +95,20 @@ init_emysql() ->
 
 
 replace(Str, SubStr, NewStr) ->
-    case string:str(Str, SubStr) of
-        Pos when Pos == 0 ->
-            Str;
-        Pos when Pos == 1 ->
-            Tail = string:substr(Str, string:len(SubStr) + 1),
-            string:concat(NewStr, replace(Tail, SubStr, NewStr));
-        Pos ->
-            Head = string:substr(Str, 1, Pos - 1),
-            Tail = string:substr(Str, Pos + string:len(SubStr)),
-            string:concat(string:concat(Head, NewStr), replace(Tail, SubStr, NewStr))
-    end.
+    go:str_replace(Str, SubStr, NewStr).
+
+% replace(Str, SubStr, NewStr) ->
+%     case string:str(Str, SubStr) of
+%         Pos when Pos == 0 ->
+%             Str;
+%         Pos when Pos == 1 ->
+%             Tail = string:substr(Str, string:len(SubStr) + 1),
+%             string:concat(NewStr, replace(Tail, SubStr, NewStr));
+%         Pos ->
+%             Head = string:substr(Str, 1, Pos - 1),
+%             Tail = string:substr(Str, Pos + string:len(SubStr)),
+%             string:concat(string:concat(Head, NewStr), replace(Tail, SubStr, NewStr))
+%     end.
 
 
 to_binary(X) when is_list(X) -> list_to_binary(X);
