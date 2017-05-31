@@ -30,7 +30,7 @@ update(Pool, TableName, List, Where) ->
 
 update_sql(TableName, List, Where) ->
     SetList = lists:map(fun({Key, Val}) ->
-                lists:concat(["`", to_str(Key), "` = '", replace(to_str(Val), "'", "\\'"), "'"])
+                lists:concat(["`", lib_fun:to_str(Key), "` = '", go:str_replace(lib_fun:to_str(Val), "'", "\\'"), "'"])
     end, List),
     Set = string:join(SetList, ", "),
     lists:concat(["UPDATE `", TableName, "`", " SET ", Set, " WHERE ", Where]).
@@ -46,11 +46,11 @@ insert_sql(TableName, List) ->
     {FieldList, DataList} = lists:unzip(List),
 
     FilterFieldList = lists:map(fun(Key) ->
-        to_str(Key)
+        lib_fun:to_str(Key)
     end, FieldList),
     FieldStr = string:join(FilterFieldList, "`, `"),
     DataList1 = lists:map(fun(F) ->
-        FF = replace(to_str(F), "'", "\\'"),
+        FF = go:str_replace(lib_fun:to_str(F), "'", "\\'"),
         lists:concat(["'", FF, "'"])
     end, DataList),
     DataStr = string:join(DataList1, ", "),
@@ -60,11 +60,11 @@ query_sql(Sql) ->
     query_sql(default, Sql).
 
 % query_sql(Pool, Sql) ->
-%     emysql:execute(Pool, to_binary(Sql)).
+%     emysql:execute(Pool, lib_fun:to_binary(Sql)).
 
 query_sql(Pool, Sql) ->
     try
-        emysql:execute(Pool, to_binary(Sql))
+        emysql:execute(Pool, lib_fun:to_binary(Sql))
     catch
          Class:Reason ->
             lager:error(
@@ -72,7 +72,7 @@ query_sql(Pool, Sql) ->
                 [lager:pr_stacktrace(erlang:get_stacktrace(), {Class, Reason})]),
 
             init_emysql(),
-            emysql:execute(Pool, to_binary(Sql))
+            emysql:execute(Pool, lib_fun:to_binary(Sql))
     end.
 
 % init_emysql() ->
@@ -93,33 +93,3 @@ init_emysql() ->
         emysql:add_pool(Pool, PoolSize, UserName, Password, Host, Port, DatabaseName, Encode)
     end, Pools).
 
-
-replace(Str, SubStr, NewStr) ->
-    go:str_replace(Str, SubStr, NewStr).
-
-% replace(Str, SubStr, NewStr) ->
-%     case string:str(Str, SubStr) of
-%         Pos when Pos == 0 ->
-%             Str;
-%         Pos when Pos == 1 ->
-%             Tail = string:substr(Str, string:len(SubStr) + 1),
-%             string:concat(NewStr, replace(Tail, SubStr, NewStr));
-%         Pos ->
-%             Head = string:substr(Str, 1, Pos - 1),
-%             Tail = string:substr(Str, Pos + string:len(SubStr)),
-%             string:concat(string:concat(Head, NewStr), replace(Tail, SubStr, NewStr))
-%     end.
-
-
-to_binary(X) when is_list(X) -> list_to_binary(X);
-to_binary(X) when is_atom(X) -> list_to_binary(atom_to_list(X));
-to_binary(X) when is_binary(X) -> X;
-to_binary(X) when is_integer(X) -> list_to_binary(integer_to_list(X));
-to_binary(X) when is_float(X) -> list_to_binary(float_to_list(X));
-to_binary(X) -> term_to_binary(X).
-
-to_str(X) when is_list(X) -> X;
-to_str(X) when is_atom(X) -> atom_to_list(X);
-to_str(X) when is_binary(X) -> binary_to_list(X);
-to_str(X) when is_integer(X) -> integer_to_list(X);
-to_str(X) when is_float(X) -> float_to_list(X).
