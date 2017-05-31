@@ -16,7 +16,6 @@ _build
 .idea
 rebar3.crashdump
 Mnesia*
+*node
 *log
 *pid
-*bak
-*node
