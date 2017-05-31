@@ -19,8 +19,7 @@ type StrController struct  {
 // 正则表达式demo
 // http://www.cnblogs.com/golove/p/3269099.html
 // http://xiaorui.cc/2016/03/16/%E5%85%B3%E4%BA%8Egolang-regexp%E6%AD%A3%E5%88%99%E7%9A%84%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95/
-
-//
+// http://money.finance.sina.com.cn/corp/go.php/vMS_MarketHistory/stockid/sh600031.phtml?year=2017&jidu=2
 
 
 //erlang 调用demo:
@@ -41,8 +40,6 @@ func (this *StrController) Excute(message etf.Tuple) (*etf.Term) {
             return &replyTerm
         } else if string(act) == "parse_html" {
             html := message[2].(string)
-            log.Printf("html =========================: %#v", html)
-
             replyTerm := etf.Term(etf.Tuple{etf.Atom("ok"), html})
             return &replyTerm
         } else {
