@@ -20,6 +20,9 @@ type StrController struct  {
 // http://www.cnblogs.com/golove/p/3269099.html
 // http://xiaorui.cc/2016/03/16/%E5%85%B3%E4%BA%8Egolang-regexp%E6%AD%A3%E5%88%99%E7%9A%84%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95/
 
+//
+
+
 //erlang 调用demo:
 //gen_server:call(GoMBox, {str, str_replace, StrRes, FindStr, ReplaceTo}).
 func (this *StrController) Excute(message etf.Tuple) (*etf.Term) {
@@ -38,6 +41,8 @@ func (this *StrController) Excute(message etf.Tuple) (*etf.Term) {
             return &replyTerm
         } else if string(act) == "parse_html" {
             html := message[2].(string)
+            log.Printf("html =========================: %#v", html)
+
             replyTerm := etf.Term(etf.Tuple{etf.Atom("ok"), html})
             return &replyTerm
         } else {

@@ -103,3 +103,8 @@ apps() ->
     io:format("~n~p~n~n", [AppList]),
     ok.
 
+
+d() ->
+    Dir = code:priv_dir(go) ++ "/1.html",
+    {_, H} = lib_fun:file_get_contents(Dir),
+    parse_html(H).
