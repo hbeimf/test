@@ -12,6 +12,12 @@
 %%====================================================================
 % info() ->
 %     go_name_server:info().
+parse_html() ->
+    Html = "html",
+    parse_html(Html).
+parse_html(Html) ->
+    Call = {str, parse_html, Html},
+    call(Call).
 
 info() ->
     Call = info,
@@ -69,48 +75,6 @@ t() ->
     end, lists:seq(1, 100)).
 
 
-
-%%====================================================================
-%% Internal functions
-%%====================================================================
-% default_go_mailbox() ->
-%     {ok, GoMBox} = application:get_env(go, go_mailbox),
-%     GoMBox.
-
-% start_goroutine() ->
-%     go_server:start_goroutine().
-
-% stop({ServerName, _Host} = GoMBox) ->
-%     case exists(ServerName) of
-%         true ->
-%             go_server:stop_goroutine(GoMBox);
-%         _ ->
-%             ok
-%     end.
-
-% stop_by_name(ServerName) ->
-%     {_, Host} = go_name_server:get_gombox(),
-%     GoMBox = {ServerName, Host},
-%     stop(GoMBox).
-
-% stop() ->
-%     {_, _, {_, _, Goroutines}, _} = info(),
-%     lists:foreach(fun(Goroutine) ->
-%         stop_by_name(Goroutine)
-%     end, Goroutines).
-
-% exists(ServerName) when is_atom(ServerName) ->
-%     {_, _, {_,_, Goroutines}, _} = info(),
-%     case lists:member(ServerName, Goroutines) of
-%         true ->
-%             true;
-%         _ ->
-%             false
-%     end;
-% exists(_ServerName) ->
-%     false.
-
-
 %%====================================================================
 %% Call Api functions
 %% erlang 实现的函数
@@ -139,74 +103,3 @@ apps() ->
     io:format("~n~p~n~n", [AppList]),
     ok.
 
-
-%%====================================================================
-%% call demos
-%%====================================================================
-
-% echo_zh() ->
-%     Utf8Name = unicode:characters_to_binary("xiaomin小明"),
-%     io:format("~ts~n", [Utf8Name]).
-
-% d() ->
-%     demo(),
-%     wrong(),
-%     iconv(),
-%     parse_list(),
-%     ok.
-
-
-% ss() ->
-%     lists:foreach(fun(X)->
-%         GoMBox = start_goroutine(),
-%         io:format("~p: ~p~n", [X, GoMBox])
-%     end, lists:seq(1, 100)).
-
-% demo() ->
-%     % {ok, GoMBox} = application:get_env(go, go_mailbox),
-%     GoMBox = start_goroutine(),
-
-%     Utf8Name = unicode:characters_to_binary("xiaomin小明"),
-%     % Json = jsx:encode(#{name=>Utf8Name, email=><<"123456@gmail.com">>, age=> 1}),
-%     Json = jsx:encode(#{name=>Utf8Name, email=><<"123456@gmail.com">>, age=> 1, list=>[1,2,3,5]}),
-
-%     Call = {demo, Json},
-%     Reply = gen_server:call(GoMBox, Call),
-
-%     stop(GoMBox),
-
-%     io:format("~p ~n", [Reply]),
-
-%     Reply.
-
-% wrong() ->
-%     GoMBox = start_goroutine(),
-
-%     Utf8Name = unicode:characters_to_binary("xiaomin小明"),
-%     Json = jsx:encode(#{name=>Utf8Name, email=><<"123456@gmail.com">>, age=> 1}),
-
-%     Call = {wrong, Json},
-%     Reply = gen_server:call(GoMBox, Call),
-%     stop(GoMBox),
-%     io:format("~p ~n", [Reply]),
-%     Reply.
-
-
-% iconv() ->
-%     % gb2312 的网页
-%     Url = "http://down.chinaz.com/soft/34159.htm",
-%     % Url = "https://www.baidu.com/",
-
-%     DirGoPriv = code:lib_dir(go, priv),
-%     Html = http_get(Url),
-%     Dir = DirGoPriv ++ "/gb2312.html",
-%     file:write_file(Dir, Html),
-
-%     From = 'gb2312',
-%     To = 'utf-8',
-%     Html2 = iconv(Html, From, To),
-
-%     Dir1 = DirGoPriv ++ "/utf-8.html",
-%     file:write_file(Dir1, Html2),
-
-%     ok.

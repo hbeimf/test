@@ -36,6 +36,10 @@ func (this *StrController) Excute(message etf.Tuple) (*etf.Term) {
             replyString := str_replace(str, from, to)
             replyTerm := etf.Term(etf.Tuple{etf.Atom("ok"), replyString})
             return &replyTerm
+        } else if string(act) == "parse_html" {
+            html := message[2].(string)
+            replyTerm := etf.Term(etf.Tuple{etf.Atom("ok"), html})
+            return &replyTerm
         } else {
             replyTerm := etf.Term(etf.Tuple{etf.Atom("action_undefine")})
             return &replyTerm
