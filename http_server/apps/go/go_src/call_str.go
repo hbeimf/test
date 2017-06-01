@@ -59,6 +59,8 @@ func (this *StrController) Excute(message etf.Tuple) (*etf.Term) {
                         find_td(trs[i])
                     }
                 }
+                // 返回列表　Tuple
+
                 replyTerm = etf.Term(etf.Tuple{etf.Atom("ok")})
             } else {
                 // log.Printf("match =========================: %#v", matchTable)
@@ -118,6 +120,8 @@ func find_tr(table string) []string {
     return trs
 }
 
+
+// 返回一个Tuple
 func find_td(tr string) {
     reg := regexp.MustCompile("\\<td[\\S\\s]+?\\</td\\>")
     tds := reg.FindAllString(tr, -1)
