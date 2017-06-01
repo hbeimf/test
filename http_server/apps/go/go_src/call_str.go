@@ -6,7 +6,7 @@ import (
     "log"
     // "github.com/tidwall/gjson"
     "regexp"
-    // "strings"
+    "strings"
 )
 
 // ================================================================
@@ -50,18 +50,24 @@ func (this *StrController) Excute(message etf.Tuple) (*etf.Term) {
             if len(matchTable) > 0 {
                 // log.Printf("matchTable =========================: %#v", matchTable)
                 // log.Printf("XXmatchTable =========================: %#v", matchTable[0])
+                var list etf.List
                 trs := find_tr(matchTable[0])
 
                 if len(trs) > 0 {
                     for i:=0; i<len(trs); i++ {
                         // lis = append(lis, m[i])
                         // log.Printf("tr =========================: %#v", trs[i])
-                        find_td(trs[i])
+                        t := find_td(trs[i])
+                        if len(t) > 0 {
+                            list = append(list, t)
+                        }
+
+                        log.Printf("td =========================: %#v", t)
                     }
                 }
                 // 返回列表　Tuple
 
-                replyTerm = etf.Term(etf.Tuple{etf.Atom("ok")})
+                replyTerm = etf.Term(etf.Tuple{etf.Atom("ok"), list})
             } else {
                 // log.Printf("match =========================: %#v", matchTable)
                 replyTerm = etf.Term(etf.Tuple{etf.Atom("no")})
@@ -122,17 +128,22 @@ func find_tr(table string) []string {
 
 
 // 返回一个Tuple
-func find_td(tr string) {
+func find_td(tr string) etf.Tuple {
     reg := regexp.MustCompile("\\<td[\\S\\s]+?\\</td\\>")
     tds := reg.FindAllString(tr, -1)
 
-    if len(tds) > 0 {
-        for i:=0; i<len(tds); i++ {
-            log.Printf("td =========================: %#v", tds[i])
-            strip_tags(tds[i])
-        }
-    }
+    // if len(tds) > 0 {
+    //     for i:=0; i<len(tds); i++ {
+    //         log.Printf("td =========================: %#v", tds[i])
+    //         strip_tags(tds[i])
+    //     }
+    // }
 
+    var r etf.Tuple
+    if len(tds) == 7 {
+        r = etf.Tuple{strings.TrimSpace(strip_tags(tds[0])), strip_tags(tds[1]), strip_tags(tds[2]), strip_tags(tds[3]), strip_tags(tds[4]), strip_tags(tds[5]), strip_tags(tds[6])}
+    }
+    return r
 }
 
 // http://outofmemory.cn/code-snippet/2092/usage-golang-regular-expression-regexp-quchu-HTML-CSS-SCRIPT-code-jin-maintain-page-wenzi
@@ -140,7 +151,7 @@ func strip_tags(html string) string {
     // re, _ = regexp.Compile("\\<[\\S\\s]+?\\>")
     reg := regexp.MustCompile("\\<[\\S\\s]+?\\>")
     html = reg.ReplaceAllString(html, "")
-    log.Printf("con =========================: %#v", html)
+    // log.Printf("con =========================: %#v", html)
     return html
 }
 
