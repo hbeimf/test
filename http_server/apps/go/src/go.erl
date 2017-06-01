@@ -30,12 +30,7 @@ parse_list(List, Add) ->
     Call = {list, List, Add},
     call(Call).
 
-% From = 'gb2312',
-% To = 'utf-8',
-iconv(Str, From, To) ->
-    Call = {iconv, Str, From, To},
-    {ok, ReplyStr} = call(Call),
-    ReplyStr.
+
 
 str_replace() ->
     str_replace("hello world!!", "e", "XX").
@@ -43,6 +38,44 @@ str_replace(StrRes, FindStr, ReplaceTo) ->
     Call = {str, str_replace, lib_fun:to_str(StrRes), FindStr, ReplaceTo},
     {ok, NewString} = call(Call),
     NewString.
+
+
+% From = 'gb2312',
+% To = 'utf-8',
+iconv(Str, From, To) ->
+    case string:len(Str) > 3000 of
+        true ->
+            long_string_iconv(Str, From, To);
+        _ ->
+            short_string_iconv(Str, From, To)
+    end.
+
+short_string_iconv(Str, From, To) ->
+    Call = {iconv, lib_fun:to_binary(Str), From, To},
+    {ok, ReplyStr} = call(Call),
+    ReplyStr.
+
+long_string_iconv(String, From, To) ->
+    L = cut_str(lib_fun:to_str(String), 3000),
+    List = lists:foldl(fun(Str, Reply) ->
+      R = short_string_iconv(Str, From, To),
+      [R|Reply]
+    end, [], L),
+    lib_fun:implode(List, "").
+
+cut_str(Str, Len) ->
+    cut_str([], Str, Len).
+
+cut_str(ReplyList, Str, Len) ->
+    StrLen = string:len(Str),
+    case StrLen < Len of
+        true ->
+            [Str|ReplyList];
+        _ ->
+            Head = string:substr(Str, 1, Len),
+            Tail = string:substr(Str, Len+1, StrLen - Len),
+            cut_str([Head|ReplyList], Tail, Len)
+    end.
 
 % str(Str) ->
 %     Call = {str, Str},
@@ -104,7 +137,63 @@ apps() ->
     ok.
 
 
-d() ->
+
+
+dd() ->
+    % Html = http_get("http://money.finance.sina.com.cn/corp/go.php/vMS_MarketHistory/stockid/600031.phtml?year=2017&jidu=2"),
+    % Html = http_get("http://money.finance.sina.com.cn/corp/go.php/vMS_MarketHistory/stockid/sh600031.phtml?year=2017&jidu=2"),
+
+    % Html = http_get("https://www.baidu.com"),
+
+    % Html1 = iconv(Html, 'gb2312', 'utf-8'),
+    % Html1.
     Dir = code:priv_dir(go) ++ "/1.html",
-    {_, H} = lib_fun:file_get_contents(Dir),
-    parse_html(H).
+    {_, F} = lib_fun:file_get_contents(Dir),
+
+    % Str = lib_fun:to_str(F),
+
+    % string:substr("Hello World",4,5).
+
+    % string:len(Str),
+
+
+
+    % iconv(F, gb2312, 'utf-8//IGNORE'),
+    iconv(F, 'gb2312', 'utf-8'),
+
+    ok.
+    % lib_fun:file_put_contents(Dir, Html).
+
+
+% cut_str(Str, Size) ->
+%     cut_str(Str, string:len(Str)).
+
+% cut_str(Str, Len) ->
+%     StrLen = string:len(Str),
+%     case StrLen < Len of
+%         true ->
+%             [Str];
+%         _ ->
+%             Head = string:substr(Str, 1, Len),
+%             Tail = string:substr(Str, Len+1, StrLen - Len),
+%             [Head|cut_str(Tail, Len)]
+%     end.
+
+% d() ->
+%     Dir = code:priv_dir(go) ++ "/1.html",
+%     {_, H} = lib_fun:file_get_contents(Dir),
+%     % L = cut_str(lib_fun:to_str(H), 3000),
+%     % List = lists:foldl(fun(Str, Reply) ->
+%     %   R = iconv(Str, 'gb2312', 'utf-8'),
+%     %   [R|Reply]
+%     % end, [], L),
+%     % Con = lib_fun:implode(List, ""),
+
+%     Con = long_string_iconv(H, 'gb2312', 'utf-8'),
+%     Dir2 = code:priv_dir(go) ++ "/2.html",
+%     lib_fun:file_put_contents(Dir2, Con).
+
+    % parse_html(lib_fun:to_binary(H)).
+
+
+
