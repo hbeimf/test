@@ -98,7 +98,7 @@ insert_page(InfoKey, Link) ->
 %          {noreply, State, Timeout} |
 %          {stop, Reason, State}            (terminate/2 is called)
 % --------------------------------------------------------------------
-handle_cast({work, {init_data, From}}, State) ->
+handle_cast({work, {init_data, _From}}, State) ->
     % delete_page(),
     % io:format("delete done!!~n~n"),
     Sql = "SELECT code,name FROM m_gp_list",
@@ -106,44 +106,46 @@ handle_cast({work, {init_data, From}}, State) ->
     Years = spider:years(),
     {TheYear, TheJiDu} = spider:today(),
 
-    lists:foreach(fun(Row)-> 
+    lists:foreach(fun(Row)->
         % timer:sleep(10),
         {_, Code} = lists:keyfind(<<"code">>, 1, Row),
         {_, Name} = lists:keyfind(<<"name">>, 1, Row),
         % io:format("")
-                    
 
-        lists:foreach(fun({Year, Jidu}) -> 
+        StrCode = lib_fun:to_str(Code),
+        Code1 = string:sub_string(StrCode, 3, length(StrCode)),
+
+        lists:foreach(fun({Year, Jidu}) ->
             InfoKey = lib_fun:to_str(Name) ++ ":" ++ lib_fun:to_str(Code) ++ ":" ++ lib_fun:to_str(Year) ++ ":" ++ lib_fun:to_str(Jidu),
 
-            Link = "http://money.finance.sina.com.cn/corp/go.php/vMS_MarketHistory/stockid/"++lib_fun:to_str(Code)++".phtml?year="++lib_fun:to_str(Year)++"&jidu="++lib_fun:to_str(Jidu),
-        
+            Link = "http://money.finance.sina.com.cn/corp/go.php/vMS_MarketHistory/stockid/"++lib_fun:to_str(Code1)++".phtml?year="++lib_fun:to_str(Year)++"&jidu="++lib_fun:to_str(Jidu),
+
 
             SqlKey = "SELECT id from sina_web_page where info_key = '"++lib_fun:to_str(InfoKey)++"' limit 1",
             % $row = $this->_mysql->get($sql);
             Res = mysql:get_assoc(SqlKey),
 
             case length(Res) =:= 0 of
-                true -> 
+                true ->
                     % io:format("~p~n", [{Link, Res}]);
                     insert_page(InfoKey, Link);
-                _ -> 
+                _ ->
                     case  Year =:= TheYear andalso Jidu =:= TheJiDu of
-                        true -> 
+                        true ->
                             io:format("link: ~p~n", [Link]);
                             % insert_page(InfoKey, Link);
-                        _ -> 
+                        _ ->
                             ok
                     end
             end
 
 
-            
+
         end, Years)
 
         % Link = "http://money.finance.sina.com.cn/corp/go.php/vMS_MarketHistory/stockid/"++lib_fun:to_str(Code)++".phtml?year={$year}&jidu={$jd}",
 
-        
+
     end, Rows),
     % Link = "http://money.finance.sina.com.cn/corp/go.php/vMS_MarketHistory/stockid/{$code1}.phtml?year={$year}&jidu={$jd}";
 
@@ -201,17 +203,17 @@ handle_cast({work, {show_result, From}}, State) ->
             A.closePrice as price,
             A.str_time as date,
             A.year_num,
-            B.name 
-            from gp_high as A 
-            inner join m_gp_list as B 
-            on A.code = B.code 
-            where 
-            A.year_num >= 10 
+            B.name
+            from gp_high as A
+            inner join m_gp_list as B
+            on A.code = B.code
+            where
+            A.year_num >= 10
             order by A.high_yid asc
             limit 50
             ",
     List = mysql:get_assoc(Sql),
-    lists:foldr(fun(L, ReplyList) -> 
+    lists:foldr(fun(L, ReplyList) ->
         {_, Code} = lists:keyfind(<<"code">>, 1, L),
         {_, Name} = lists:keyfind(<<"name">>, 1, L),
         {_, StrTime} = lists:keyfind(<<"date">>, 1, L),
@@ -257,14 +259,14 @@ handle_cast({work, {find_yid, From}}, State) ->
 
     Sql = "INSERT INTO gp_high(code, high_yid, openPrice, closePrice, highPrice, lowerPrice, time, str_time, year_num) VALUES ",
 
-    Sql1 = lists:foldl(fun(CodeL, ReplySql) -> 
+    Sql1 = lists:foldl(fun(CodeL, ReplySql) ->
         timer:sleep(10),
 
         {_, Code} = lists:keyfind(<<"code">>, 1, CodeL),
         % {_, Name} = lists:keyfind(<<"name">>, 1, CodeL),
         % _Reply = find_yid:code(Code),
 
-        {YId, OpenPrice, ClosePrice, HighPrice, LowerPrice, Time, StrTime, YearsNum} = find_yid:code(Code), 
+        {YId, OpenPrice, ClosePrice, HighPrice, LowerPrice, Time, StrTime, YearsNum} = find_yid:code(Code),
 
         Msg = "正在分析: code: " ++ to_str(Code),
         Msg1 = unicode:characters_to_binary(Msg),
@@ -276,7 +278,7 @@ handle_cast({work, {find_yid, From}}, State) ->
             ++to_str(Time)++", '"++to_str(StrTime)++"', "
             ++to_str(YearsNum)++"),"
 
-    end, Sql, CodeList),    
+    end, Sql, CodeList),
 
     Sql2 = rtrim(Sql1, ","),
 
@@ -358,7 +360,7 @@ rtrim(Str, SubStr) ->
                 Length ->
                     Head = string:substr(NewStr, Length + 1, LengthNewSubStr),
                     case string:equal(Head, NewSubStr) of
-                        true ->     
+                        true ->
                             Tail = string:substr(NewStr, 1, Length),
                             rtrim(Tail, SubStr);
                         false ->
@@ -381,7 +383,7 @@ rtrim(Str, SubStr) ->
 %                 Length ->
 %                     Head = string:substr(NewStr, 1, LengthNewSubStr),
 %                     case string:equal(Head, NewSubStr) of
-%                         true ->     
+%                         true ->
 %                             Tail = string:substr(NewStr, LengthNewSubStr+1, Length),
 %                             ltrim(Tail, SubStr);
 %                         false ->
