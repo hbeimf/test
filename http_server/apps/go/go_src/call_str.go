@@ -6,6 +6,7 @@ import (
     "log"
     // "github.com/tidwall/gjson"
     "regexp"
+    // "strings"
 )
 
 // ================================================================
@@ -25,7 +26,7 @@ type StrController struct  {
 //erlang 调用demo:
 //gen_server:call(GoMBox, {str, str_replace, StrRes, FindStr, ReplaceTo}).
 func (this *StrController) Excute(message etf.Tuple) (*etf.Term) {
-    log.Printf("message str: %#v", message)
+    // log.Printf("message str: %#v", message)
     // log.Printf("str =========================: %#v", message[1].(string))
 
     switch act := message[1].(type) {
@@ -39,17 +40,31 @@ func (this *StrController) Excute(message etf.Tuple) (*etf.Term) {
             replyTerm := etf.Term(etf.Tuple{etf.Atom("ok"), replyString})
             return &replyTerm
         } else if string(act) == "parse_html" {
-            log.Printf("show =========================: %#v", byteString(message[2].([]byte)))
 
             html := byteString(message[2].([]byte))
-            // html := message[2].(string)
-
-            reg := regexp.MustCompile(`<table id="FundHoldSharesTable">(.*)</table>`)
+            // log.Printf("show =========================: %#v", html)
+            reg := regexp.MustCompile("\\<table id=\"FundHoldSharesTable\"[\\S\\s]+?\\</table\\>")
             matchTable := reg.FindAllString(html, -1)
 
-            log.Printf("matchTable =========================: %#v", matchTable)
+            var replyTerm etf.Term
+            if len(matchTable) > 0 {
+                // log.Printf("matchTable =========================: %#v", matchTable)
+                // log.Printf("XXmatchTable =========================: %#v", matchTable[0])
+                trs := find_tr(matchTable[0])
 
-            replyTerm := etf.Term(etf.Tuple{etf.Atom("ok")})
+                if len(trs) > 0 {
+                    for i:=0; i<len(trs); i++ {
+                        // lis = append(lis, m[i])
+                        // log.Printf("tr =========================: %#v", trs[i])
+                        find_td(trs[i])
+                    }
+                }
+                replyTerm = etf.Term(etf.Tuple{etf.Atom("ok")})
+            } else {
+                // log.Printf("match =========================: %#v", matchTable)
+                replyTerm = etf.Term(etf.Tuple{etf.Atom("no")})
+            }
+
             return &replyTerm
         } else {
             replyTerm := etf.Term(etf.Tuple{etf.Atom("action_undefine")})
@@ -94,4 +109,34 @@ func (this *StrController) Excute(message etf.Tuple) (*etf.Term) {
 //     return &replyTerm
 // }
 
+
+
+func find_tr(table string) []string {
+    var trs []string
+    reg := regexp.MustCompile("\\<tr[\\S\\s]+?\\</tr\\>")
+    trs = reg.FindAllString(table, -1)
+    return trs
+}
+
+func find_td(tr string) {
+    reg := regexp.MustCompile("\\<td[\\S\\s]+?\\</td\\>")
+    tds := reg.FindAllString(tr, -1)
+
+    if len(tds) > 0 {
+        for i:=0; i<len(tds); i++ {
+            log.Printf("td =========================: %#v", tds[i])
+            strip_tags(tds[i])
+        }
+    }
+
+}
+
+// http://outofmemory.cn/code-snippet/2092/usage-golang-regular-expression-regexp-quchu-HTML-CSS-SCRIPT-code-jin-maintain-page-wenzi
+func strip_tags(html string) string {
+    // re, _ = regexp.Compile("\\<[\\S\\s]+?\\>")
+    reg := regexp.MustCompile("\\<[\\S\\s]+?\\>")
+    html = reg.ReplaceAllString(html, "")
+    log.Printf("con =========================: %#v", html)
+    return html
+}
 

@@ -139,7 +139,7 @@ apps() ->
 
 
 
-dd() ->
+d() ->
     % Html = http_get("http://money.finance.sina.com.cn/corp/go.php/vMS_MarketHistory/stockid/600031.phtml?year=2017&jidu=2"),
     % Html = http_get("http://money.finance.sina.com.cn/corp/go.php/vMS_MarketHistory/stockid/sh600031.phtml?year=2017&jidu=2"),
 
@@ -147,8 +147,9 @@ dd() ->
 
     % Html1 = iconv(Html, 'gb2312', 'utf-8'),
     % Html1.
-    Dir = code:priv_dir(go) ++ "/1.html",
+    Dir = code:priv_dir(go) ++ "/2.html",
     {_, F} = lib_fun:file_get_contents(Dir),
+    parse_html(lib_fun:to_binary(F)),
 
     % Str = lib_fun:to_str(F),
 
@@ -159,7 +160,7 @@ dd() ->
 
 
     % iconv(F, gb2312, 'utf-8//IGNORE'),
-    iconv(F, 'gb2312', 'utf-8'),
+    % iconv(F, 'gb2312', 'utf-8'),
 
     ok.
     % lib_fun:file_put_contents(Dir, Html).
